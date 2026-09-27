@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AquaGuard AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1a1c; --panel:#12262a; --panel2:#173035; --line:#234047;
+  --text:#e6f2f0; --sub:#8fadab; --aqua:#3fc7b3; --aqua-dim:#1f4d47;
+  --amber:#e0a83c; --red:#e06450; --green:#4cc98a;
+  --radius:10px;
+}
+:root:not([data-theme="light"]){}
+:root[data-theme="light"]{
+  --bg:#f2f6f5; --panel:#ffffff; --panel2:#eef4f3; --line:#d5e2e0;
+  --text:#0d1a1c; --sub:#4a615f; --aqua:#0f8f7c; --aqua-dim:#d8f0eb;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:'IBM Plex Sans',sans-serif; font-size:14px;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+h1,h2,h3,.mono-label{font-family:'Space Grotesk',sans-serif}
+.mono{font-family:'IBM Plex Mono',monospace}
+a{color:inherit}
+button{font-family:inherit;cursor:pointer}
+
+#app{display:flex; min-height:100vh}
+nav{
+  width:210px; flex:none; background:var(--panel); border-right:1px solid var(--line);
+  padding:20px 14px; position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.brand{display:flex; align-items:center; gap:8px; margin-bottom:22px; padding:0 4px}
+.brand-mark{width:28px;height:28px;border-radius:7px;background:linear-gradient(160deg,var(--aqua),#1f5a52);flex:none}
+.brand-name{font-weight:700; font-size:16px; letter-spacing:.2px}
+.brand-tag{font-size:10.5px; color:var(--sub); margin-top:1px}
+.navlink{
+  display:block; padding:9px 10px; border-radius:8px; color:var(--sub);
+  font-size:13.5px; margin-bottom:2px; border:1px solid transparent;
+}
+.navlink.active{background:var(--aqua-dim); color:var(--aqua); font-weight:600; border-color:var(--line)}
+.navlink:hover:not(.active){background:var(--panel2)}
+.nav-status{margin-top:18px; padding:12px; background:var(--panel2); border-radius:8px; border:1px solid var(--line)}
+.nav-status .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+
+main{flex:1; padding:22px 28px 60px; max-width:1180px}
+header.pagehead{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:18px; flex-wrap:wrap; gap:10px}
+header.pagehead h1{font-size:21px; margin:0 0 3px}
+header.pagehead p{margin:0; color:var(--sub); font-size:13px}
+
+.grid{display:grid; gap:14px}
+.grid.cols-5{grid-template-columns:repeat(5,1fr)}
+.grid.cols-3{grid-template-columns:repeat(3,1fr)}
+.grid.cols-2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:900px){.grid.cols-5{grid-template-columns:repeat(2,1fr)}.grid.cols-3{grid-template-columns:1fr}.grid.cols-2{grid-template-columns:1fr}#app{flex-direction:column}nav{width:100%;height:auto;position:relative;display:flex;align-items:center;gap:14px}nav .navwrap{display:flex;gap:4px;overflow-x:auto}}
+
+.card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px}
+.stat-label{font-size:11px; color:var(--sub); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px}
+.stat-value{font-size:24px; font-weight:600; font-family:'Space Grotesk',sans-serif}
+.stat-sub{font-size:11.5px; color:var(--sub); margin-top:4px}
+.pill{display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:20px; font-size:11.5px; font-weight:600}
+.pill.green{background:rgba(76,201,138,.14); color:var(--green)}
+.pill.amber{background:rgba(224,168,60,.14); color:var(--amber)}
+.pill.red{background:rgba(224,100,80,.14); color:var(--red)}
+.pill.aqua{background:var(--aqua-dim); color:var(--aqua)}
+
+.section-title{font-size:14.5px; font-weight:600; margin:26px 0 10px}
+.section-title:first-child{margin-top:0}
+
+/* process diagram */
+.process{display:flex; align-items:stretch; gap:0; overflow-x:auto; padding:6px 0}
+.pstage{flex:1; min-width:118px; background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px 10px; text-align:center; cursor:pointer; position:relative}
+.pstage:hover{border-color:var(--aqua)}
+.pstage.sel{border-color:var(--aqua); background:var(--aqua-dim)}
+.pstage .name{font-size:12px; font-weight:600}
+.pstage .dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-bottom:6px}
+.parrow{width:20px; display:flex; align-items:center; justify-content:center; color:var(--sub); flex:none}
+
+.canvaswrap{position:relative; height:90px}
+canvas{width:100%; height:100%; display:block}
+
+table{width:100%; border-collapse:collapse; font-size:13px}
+th{text-align:left; color:var(--sub); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.05em; padding:8px 10px; border-bottom:1px solid var(--line)}
+td{padding:9px 10px; border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:none}
+
+.alert-card{border-left:3px solid var(--line); margin-bottom:10px}
+.alert-card.amber{border-left-color:var(--amber)}
+.alert-card.red{border-left-color:var(--red)}
+.alert-head{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap}
+.evidence{margin:10px 0 0; padding:0; list-style:none; font-size:12.5px}
+.evidence li{padding:3px 0; color:var(--sub)}
+.evidence li:before{content:"✓ "; color:var(--aqua)}
+.actions{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap}
+.btn{padding:7px 14px; border-radius:7px; border:1px solid var(--line); background:var(--panel2); color:var(--text); font-size:12.5px; font-weight:600}
+.btn.primary{background:var(--aqua); color:#08201c; border-color:var(--aqua)}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.45; cursor:default}
+
+.simbtns{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px}
+.simbtns button{padding:10px 16px; border-radius:8px; border:1px solid var(--line); background:var(--panel); color:var(--text); font-size:13px; font-weight:600}
+.simbtns button.active{border-color:var(--aqua); background:var(--aqua-dim); color:var(--aqua)}
+
+.eq-card .health-bar{height:5px; border-radius:3px; background:var(--panel2); margin:8px 0 6px; overflow:hidden}
+.eq-card .health-fill{height:100%; border-radius:3px}
+
+.banner{background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:10px 14px; font-size:12px; color:var(--sub); margin-bottom:18px}
+.empty{color:var(--sub); font-size:13px; padding:20px; text-align:center}
+
+.page{display:none} .page.active{display:block}
+
+.topbar{display:flex; justify-content:flex-end; gap:10px; margin-bottom:10px}
+.toggle{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--sub)}
+.switch{width:36px; height:20px; border-radius:12px; background:var(--panel2); border:1px solid var(--line); position:relative; cursor:pointer; flex:none}
+.switch .knob{width:16px; height:16px; border-radius:50%; background:var(--aqua); position:absolute; top:1px; left:2px; transition:left .15s}
+.switch.on .knob{left:18px}
+
+.field{margin-bottom:16px}
+.field label{display:block; font-size:12px; color:var(--sub); margin-bottom:6px}
+.field input[type=range]{width:100%}
+.field input[type=number]{background:var(--panel2); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:6px 8px; width:90px}
+.field .rangeval{font-size:12px; color:var(--aqua); font-weight:600; margin-left:6px}
+.chkrow{display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:13px}
+
+.modal-bg{display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:50; align-items:center; justify-content:center; padding:20px}
+.modal-bg.open{display:flex}
+.modal{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:22px; max-width:520px; width:100%; max-height:85vh; overflow-y:auto}
+.modal h2{margin-top:0; font-size:17px}
+.modal .close{position:absolute}
+.timeline{list-style:none; padding:0; margin:10px 0}
+.timeline li{padding:6px 0 6px 16px; border-left:2px solid var(--line); font-size:12.5px; color:var(--sub); position:relative}
+.timeline li:before{content:"";position:absolute;left:-5px;top:9px;width:8px;height:8px;border-radius:50%;background:var(--aqua)}
+
+.toastwrap{position:fixed; bottom:16px; right:16px; z-index:60; display:flex; flex-direction:column; gap:8px}
+.toast{background:var(--panel); border:1px solid var(--aqua); border-left:4px solid var(--aqua); border-radius:8px; padding:10px 14px; font-size:13px; box-shadow:0 6px 20px rgba(0,0,0,.25); max-width:280px; animation:slidein .2s ease}
+@keyframes slidein{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+</style>
+</head>
+<body>
+<div id="app">
+  <nav>
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div><div class="brand-name">AquaGuard AI</div><div class="brand-tag">Detect early. Predict risk.</div></div>
+    </div>
+    <div class="navwrap">
+      <a class="navlink" data-page="dashboard">Dashboard</a>
+      <a class="navlink" data-page="overview">Plant Overview</a>
+      <a class="navlink" data-page="monitoring">Live Monitoring</a>
+      <a class="navlink" data-page="simulation">Simulation Center</a>
+      <a class="navlink" data-page="alerts">Alerts &amp; Decisions</a>
+      <a class="navlink" data-page="equipment">Equipment Health</a>
+      <a class="navlink" data-page="settings">Settings</a>
+    </div>
+    <div class="nav-status">
+      <div style="font-size:11px;color:var(--sub);margin-bottom:4px">PLANT STATUS</div>
+      <div id="navStatusText" style="font-weight:600;font-size:13px"><span class="dot" style="background:var(--green)"></span>Operational</div>
+    </div>
+  </nav>
+
+  <main>
+    <div class="topbar">
+      <span id="syncBadge" class="stat-sub">○ Local to this browser (saved on this device only)</span>
+      <div class="toggle">Light<div class="switch" id="themeSwitch"><div class="knob"></div></div>Dark</div>
+    </div>
+    <div class="banner">Hackathon prototype — all sensor data is simulated. AI output is decision-support only; a human operator must approve every action. Not a certified water-safety system.</div>
+
+    <section class="page" id="page-dashboard">
+      <header class="pagehead"><div><h1>Plant Dashboard</h1><p>Real-time synthetic overview of AquaGuard AI monitoring</p></div></header>
+      <div class="grid cols-5" id="dashStats"></div>
+      <div class="section-title">Treatment process</div>
+      <div class="process" id="dashProcess"></div>
+      <div class="section-title">Recent alerts</div>
+      <div id="dashAlerts"></div>
+    </section>
+
+    <section class="page" id="page-overview">
+      <header class="pagehead"><div><h1>Plant Overview</h1><p>Click a stage to inspect its sensors</p></div></header>
+      <div class="process" id="ovProcess"></div>
+      <div class="card" id="ovDetail" style="margin-top:16px"></div>
+    </section>
+
+    <section class="page" id="page-monitoring">
+      <header class="pagehead"><div><h1>Live Monitoring</h1><p>Simulated sensor streams, updated every tick</p></div>
+        <div class="actions"><button class="btn primary" id="btnStart">Start</button><button class="btn" id="btnPause">Pause</button><button class="btn ghost" id="btnReset">Reset</button></div>
+      </header>
+      <div class="grid cols-3" id="monCharts"></div>
+    </section>
+
+    <section class="page" id="page-simulation">
+      <header class="pagehead"><div><h1>Simulation Center</h1><p>Trigger a failure pattern and watch the AI pipeline respond</p></div></header>
+      <div class="simbtns" id="simButtons"></div>
+      <div class="card">
+        <div class="section-title" style="margin-top:0">Pipeline status</div>
+        <div class="grid cols-5" id="pipeline"></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-alerts">
+      <header class="pagehead"><div><h1>Alerts &amp; Decision History</h1><p>Every AI recommendation, and what the operator decided. Click a card for the full incident.</p></div>
+        <button class="btn" id="btnExport">Export CSV</button>
+      </header>
+      <div id="alertList"></div>
+    </section>
+
+    <section class="page" id="page-equipment">
+      <header class="pagehead"><div><h1>Equipment Health</h1><p>Condition of pumps, filters and the chlorination system</p></div></header>
+      <div class="grid cols-3" id="eqCards"></div>
+    </section>
+
+    <section class="page" id="page-settings">
+      <header class="pagehead"><div><h1>Settings</h1><p>Demo configuration — thresholds and behaviour for this prototype, not certified engineering limits</p></div></header>
+      <div class="grid cols-2">
+        <div class="card">
+          <h3 style="margin-top:0">Risk thresholds</h3>
+          <div class="field"><label>Warning threshold<span class="rangeval" id="valWarn"></span></label><input type="range" id="rngWarn" min="10" max="55" step="1"></div>
+          <div class="field"><label>High-risk threshold<span class="rangeval" id="valHigh"></span></label><input type="range" id="rngHigh" min="56" max="95" step="1"></div>
+          <div class="field"><label>Alert sensitivity (risk score multiplier)<span class="rangeval" id="valSens"></span></label><input type="range" id="rngSens" min="0.5" max="2" step="0.1"></div>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0">Simulation</h3>
+          <div class="field"><label>Tick speed<span class="rangeval" id="valSpeed"></span></label><input type="range" id="rngSpeed" min="400" max="2400" step="200"></div>
+          <h3>Enabled sensors</h3>
+          <div id="sensorChecks"></div>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:16px"><button class="btn primary" id="btnSaveSettings">Save settings</button><button class="btn ghost" id="btnResetSettings">Restore defaults</button></div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modalBody"></div>
+</div>
+<div class="toastwrap" id="toastwrap"></div>
+
+<script>
+/* ---------- state ---------- */
+const STAGES = ["Raw Water","Screening","Coagulation","Flocculation","Sedimentation","Filtration","Disinfection","Clean Water"];
+const stageSensors = {
+  "Raw Water":["Turbidity 3.1 NTU","Flow 412 m³/h"],
+  "Screening":["Debris load: Low"],
+  "Coagulation":["Dosing rate: 4.2 mg/L"],
+  "Flocculation":["Mixer speed: 38 rpm"],
+  "Sedimentation":["Settling turbidity: 1.8 NTU"],
+  "Filtration":["Filter F-102 ΔP: rising","Turbidity: 0.6 NTU"],
+  "Disinfection":["Chlorine: 1.1 mg/L","pH: 7.2"],
+  "Clean Water":["Output turbidity: 0.2 NTU","Tank level: 82%"]
+};
+
+let scenario = "normal"; // normal | filter_clog | pump_fail | chlorine_anom
+let running = false, tick = 0, timer = null;
+let alerts = []; let alertId = 1000;
+
+const DEFAULT_SETTINGS = {warn:31, high:61, sens:1, speed:1200, theme:'dark',
+  sensors:{turbidity:true,pressure:true,flow:true,vibration:true,current:true,chlorine:true,ph:true,level:true}};
+let settings = loadJSON('aquaguard_settings', DEFAULT_SETTINGS);
+alerts = loadJSON('aquaguard_alerts', []);
+alertId = loadJSON('aquaguard_alertid', 1000);
+
+function loadJSON(key, fallback){ try{ const v=localStorage.getItem(key); return v?JSON.parse(v):fallback; }catch(e){ return fallback; } }
+function saveState(){
+  try{
+    localStorage.setItem('aquaguard_settings', JSON.stringify(settings));
+    localStorage.setItem('aquaguard_alerts', JSON.stringify(alerts));
+    localStorage.setItem('aquaguard_alertid', JSON.stringify(alertId));
+  }catch(e){}
+}
+document.documentElement.setAttribute('data-theme', settings.theme);
+
+const hist = { turbidity:[], pressure:[], flow:[], vibration:[], current:[], chlorine:[], ph:[], level:[] };
+const HISTLEN = 40;
+function seedHist(){ Object.keys(hist).forEach(k=>hist[k]=Array(HISTLEN).fill(baseline(k))); }
+function baseline(k){ return {turbidity:0.6,pressure:2.1,flow:410,vibration:2.0,current:38,chlorine:1.1,ph:7.2,level:82}[k]; }
+
+const equipmentStatic = [
+  {id:"P-201",type:"Pump",health:96},{id:"P-202",type:"Pump",health:93},{id:"P-203",type:"Pump",health:97},
+  {id:"F-101",type:"Filter",health:95},{id:"F-103",type:"Filter",health:91},{id:"F-104",type:"Filter",health:94},
+];
+
+function rand(a,b){return a+Math.random()*(b-a)}
+
+function step(){
+  tick++;
+  const push=(k,v)=>{hist[k].push(v); if(hist[k].length>HISTLEN) hist[k].shift();}
+  const last=k=>hist[k][hist[k].length-1];
+
+  let t = last('turbidity'), p = last('pressure'), f = last('flow'),
+      v = last('vibration'), c = last('current'), cl = last('chlorine'),
+      ph = last('ph'), lv = last('level');
+
+  if(scenario==="filter_clog"){
+    t = Math.min(4.5, t + rand(0.03,0.09));
+    p = Math.min(6.0, p + rand(0.03,0.08));
+    f = Math.max(260, f - rand(1.5,3.5));
+  } else if(scenario==="pump_fail"){
+    v = Math.min(9.5, v + rand(0.06,0.14));
+    c = Math.min(68, c + rand(0.3,0.8));
+    f = Math.max(240, f - rand(1.8,3.2));
+    p = Math.max(0.8, p - rand(0.02,0.05));
+  } else if(scenario==="chlorine_anom"){
+    cl = Math.max(0.1, cl - rand(0.015,0.04));
+  } else {
+    t += rand(-0.03,0.03); p += rand(-0.02,0.02); f += rand(-1,1);
+    v += rand(-0.05,0.05); c += rand(-0.2,0.2); cl += rand(-0.01,0.01);
+    t=Math.max(0.4,Math.min(1.0,t)); p=Math.max(1.8,Math.min(2.4,p)); f=Math.max(395,Math.min(425,f));
+    v=Math.max(1.6,Math.min(2.4,v)); c=Math.max(35,Math.min(41,c)); cl=Math.max(0.9,Math.min(1.4,cl));
+  }
+  ph += rand(-0.02,0.02); ph=Math.max(6.9,Math.min(7.6,ph));
+  lv += rand(-0.3,0.3); lv=Math.max(70,Math.min(92,lv));
+
+  push('turbidity',t); push('pressure',p); push('flow',f); push('vibration',v);
+  push('current',c); push('chlorine',cl); push('ph',ph); push('level',lv);
+
+  evaluateRisk();
+  renderAll();
+}
+
+/* ---------- risk / explainable AI ---------- */
+function pctChange(arr){ const start=arr[0]||arr[arr.length-1], end=arr[arr.length-1]; if(!start) return 0; return ((end-start)/start*100); }
+
+function evaluateRisk(){
+  let risk=0, component=null, evidence=[], cause="", rec="", severity="green";
+
+  if(scenario==="filter_clog"){
+    const dT=pctChange(hist.turbidity), dP=pctChange(hist.pressure), dF=pctChange(hist.flow);
+    risk = Math.max(0, Math.min(100, Math.round( Math.max(0,dT)*0.9 + Math.max(0,dP)*1.1 + Math.max(0,-dF)*1.3 )));
+    component="Filter F-102"; cause="Progressive filter clogging";
+    evidence=[`Turbidity changed ${dT.toFixed(0)}%`,`Differential pressure changed ${dP.toFixed(0)}%`,`Flow rate changed ${dF.toFixed(0)}%`];
+    rec="Inspect Filter F-102 and follow the approved backwash / maintenance procedure. Continue monitoring turbidity and flow.";
+  } else if(scenario==="pump_fail"){
+    const dV=pctChange(hist.vibration), dC=pctChange(hist.current), dF=pctChange(hist.flow), dP=pctChange(hist.pressure);
+    risk = Math.max(0, Math.min(100, Math.round( Math.max(0,dV)*0.9 + Math.max(0,dC)*0.7 + Math.max(0,-dF)*0.8 + Math.max(0,-dP)*0.6 )));
+    component="Pump P-204"; cause="Possible mechanical degradation";
+    evidence=[`Vibration changed ${dV.toFixed(0)}%`,`Motor current changed ${dC.toFixed(0)}%`,`Flow decreased ${Math.abs(Math.min(0,dF)).toFixed(0)}%`,`Pressure decreased ${Math.abs(Math.min(0,dP)).toFixed(0)}%`];
+    rec="Inspect Pump P-204 for mechanical wear or blockage. Schedule maintenance before flow drops further.";
+  } else if(scenario==="chlorine_anom"){
+    const dCl=pctChange(hist.chlorine);
+    risk = Math.max(0, Math.min(100, Math.round( Math.max(0,-dCl)*3.2 )));
+    component="Chlorination System"; cause="Dosing-system anomaly";
+    evidence=[`Chlorine level changed ${dCl.toFixed(0)}%`,`Reading below configured demo operating range`];
+    rec="Verify chlorine dosing equipment and manually confirm the measured chlorine level before continuing.";
+  } else {
+    risk = Math.round(rand(4,16));
+    component=null;
+  }
+
+  risk = Math.max(0, Math.min(100, Math.round(risk * settings.sens)));
+  severity = risk>=settings.high?"red":risk>=settings.warn?"amber":"green";
+  window.currentRisk = {risk, component, evidence, cause, rec, severity};
+
+  if(component && risk>=settings.warn){
+    const openSame = alerts.find(a=>a.component===component && a.status!=="Resolved" && a.status!=="Dismissed");
+    if(openSame){ openSame.risk=risk; openSame.severity=severity; openSame.evidence=evidence; if(!dbAlerts) saveState(); }
+    else if(risk>=settings.warn+14){
+      const docId = slugify(component)+'-'+Date.now();
+      const newAlert={docId, numId:(alertId++), time:new Date().toLocaleTimeString(), component, cause, risk, severity, evidence:[...evidence], rec, status:"New",
+        timeline:[`Detected trend deviation in ${component}`,`Risk score crossed ${settings.warn}% threshold`,`AI generated ${severity==='red'?'high-risk':'warning'} alert`]};
+      if(dbAlerts){ dbAlerts.doc(docId).set(newAlert).catch(()=>{}); }
+      else { alerts.unshift(newAlert); saveState(); }
+      toast(`New alert: ${component} — ${cause} (${risk}%)`);
+    }
+  }
+}
+
+async function useCapability(name){
+  try{
+    if(typeof window.claude === 'undefined' || typeof window.claude.use !== 'function') return null;
+    return await window.claude.use(name);
+  }catch(e){ return null; }
+}
+
+let dbAlerts = null, dbReady = false;
+function slugify(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
+
+async function initDb(){
+  try{
+    const db = await useCapability('db');
+    if(!db){ renderSyncBadge(false); return; }
+    dbAlerts = db.collection('alerts'); dbReady = true; renderSyncBadge(true);
+    dbAlerts.onSnapshot(snap=>{
+      const docs = snap.docs.map(d=>({docId:d.id, ...d.data()}));
+      docs.sort((a,b)=>(b.numId||0)-(a.numId||0));
+      alerts = docs;
+      renderAlerts(); renderDashboard(); renderEquipment();
+    }, ()=>{ renderSyncBadge(false); });
+  }catch(e){ renderSyncBadge(false); }
+}
+function renderSyncBadge(on){
+  const el=document.getElementById('syncBadge'); if(!el) return;
+  el.textContent = on ? '● Synced across operators' : '○ Local to this browser';
+  el.style.color = on ? 'var(--green)' : 'var(--sub)';
+}
+function setAlertStatus(docId, status){
+  const a = alerts.find(x=>x.docId===docId); if(a) a.status=status;
+  renderAll();
+  if(dbAlerts){ dbAlerts.doc(docId).update({status}).catch(()=>{}); } else saveState();
+}
+  const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+  document.getElementById('toastwrap').appendChild(t);
+  setTimeout(()=>t.remove(), 5000);
+}
+
+/* ---------- rendering ---------- */
+function statusFromRisk(){ const r=window.currentRisk?.risk||0; return r>=61?["red","High Risk"]:r>=31?["amber","Warning"]:["green","Operational"]; }
+
+function renderDashboard(){
+  const [cls,label]=statusFromRisk();
+  const r=window.currentRisk?.risk||0;
+  const activeAlerts = alerts.filter(a=>a.status==="New"||a.status==="Investigating").length;
+  document.getElementById('navStatusText').innerHTML = `<span class="dot" style="background:var(--${cls==='green'?'green':cls==='amber'?'amber':'red'})"></span>${label}`;
+
+  const stats=[
+    {label:"Plant Status", value:label, sub:cls==='green'?'All systems nominal':'Requires attention', cls},
+    {label:"Overall Risk", value:r+"%", sub:"Prototype risk score", cls},
+    {label:"Water Quality", value:cl_q(), sub:"Turbidity & chlorine within demo range", cls:"green"},
+    {label:"Active Alerts", value:activeAlerts, sub:activeAlerts?"Needs operator review":"None pending", cls:activeAlerts?"amber":"green"},
+    {label:"Equipment Health", value:avgHealth()+"%", sub:"Fleet average", cls:"green"},
+  ];
+  document.getElementById('dashStats').innerHTML = stats.map(s=>`
+    <div class="card"><div class="stat-label">${s.label}</div><div class="stat-value">${s.value}</div>
+    <div class="stat-sub"><span class="pill ${s.cls}">●</span> ${s.sub}</div></div>`).join('');
+
+  document.getElementById('dashProcess').innerHTML = STAGES.map((s,i)=>stageHtml(s,i,false)).join('');
+  document.getElementById('dashAlerts').innerHTML = alerts.length? alerts.slice(0,3).map(alertHtml).join('') : `<div class="empty">No alerts yet — try a scenario in the Simulation Center.</div>`;
+  wireAlertButtons();
+}
+function cl_q(){ const cl=hist.chlorine[hist.chlorine.length-1]; return (cl>0.7 && cl<1.5)?"Normal":"Check"; }
+function avgHealth(){ const dyn = equipmentDynamic(); const all=[...equipmentStatic, ...dyn]; return Math.round(all.reduce((s,e)=>s+e.health,0)/all.length); }
+
+function stageHtml(name,i,clickable){
+  const isFilterAffected = name==="Filtration" && scenario==="filter_clog";
+  const isDisinfAffected = name==="Disinfection" && scenario==="chlorine_anom";
+  const warn = isFilterAffected||isDisinfAffected;
+  const dotColor = warn ? (window.currentRisk?.risk>=61?'var(--red)':'var(--amber)') : 'var(--green)';
+  return `<div class="pstage ${window.selStage===name?'sel':''}" data-stage="${name}"><span class="dot" style="background:${dotColor}"></span><div class="name">${name}</div></div>${i<STAGES.length-1?'<div class="parrow">→</div>':''}`;
+}
+
+function renderOverview(){
+  document.getElementById('ovProcess').innerHTML = STAGES.map((s,i)=>stageHtml(s,i,true)).join('');
+  document.querySelectorAll('#ovProcess .pstage').forEach(el=>el.onclick=()=>{window.selStage=el.dataset.stage; renderOverview();});
+  const sel = window.selStage || "Filtration";
+  const sensors = stageSensors[sel]||[];
+  document.getElementById('ovDetail').innerHTML = `<h3 style="margin-top:0">${sel}</h3>
+    <table><tbody>${sensors.map(s=>`<tr><td>${s}</td></tr>`).join('')}</tbody></table>`;
+}
+
+function sparkline(canvas, data, color){
+  const ctx=canvas.getContext('2d'); const w=canvas.width=canvas.clientWidth*2; const h=canvas.height=canvas.clientHeight*2;
+  ctx.clearRect(0,0,w,h);
+  const min=Math.min(...data), max=Math.max(...data)||1; const pad=6;
+  ctx.beginPath(); ctx.lineWidth=3; ctx.strokeStyle=color; ctx.lineJoin='round';
+  data.forEach((v,i)=>{ const x=pad+(w-2*pad)*(i/(data.length-1)); const y=h-pad-(h-2*pad)*((v-min)/((max-min)||1)); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.stroke();
+}
+
+const chartDefs=[
+  {k:'turbidity',label:'Turbidity (NTU)',color:'var(--aqua)'},{k:'pressure',label:'Filter Pressure (bar)',color:'var(--aqua)'},
+  {k:'flow',label:'Flow Rate (m³/h)',color:'var(--aqua)'},{k:'vibration',label:'Pump Vibration (mm/s)',color:'var(--amber)'},
+  {k:'current',label:'Motor Current (A)',color:'var(--amber)'},{k:'chlorine',label:'Chlorine (mg/L)',color:'var(--green)'},
+  {k:'ph',label:'pH',color:'var(--green)'},{k:'level',label:'Tank Level (%)',color:'var(--green)'}
+];
+function renderMonitoring(){
+  const wrap=document.getElementById('monCharts');
+  if(!wrap.children.length){
+    wrap.innerHTML = chartDefs.map(c=>`<div class="card"><div class="stat-label">${c.label}</div>
+      <div class="canvaswrap"><canvas id="c_${c.k}"></canvas></div>
+      <div class="stat-sub mono" id="v_${c.k}"></div></div>`).join('');
+  }
+  chartDefs.forEach(c=>{
+    const canvas=document.getElementById('c_'+c.k);
+    const resolved = getComputedStyle(document.documentElement).getPropertyValue(c.color.replace('var(','').replace(')','')) || '#3fc7b3';
+    sparkline(canvas, hist[c.k], resolved.trim()||'#3fc7b3');
+    document.getElementById('v_'+c.k).textContent = hist[c.k][hist[c.k].length-1].toFixed(2)+" current";
+  });
+}
+
+const SIM_LABELS={normal:"Normal Operation",filter_clog:"Simulate Filter Clogging",pump_fail:"Simulate Pump Failure",chlorine_anom:"Simulate Chlorine Anomaly"};
+function renderSimulation(){
+  document.getElementById('simButtons').innerHTML = Object.keys(SIM_LABELS).map(k=>`<button data-sc="${k}" class="${scenario===k?'active':''}">${SIM_LABELS[k]}</button>`).join('');
+  document.querySelectorAll('#simButtons button').forEach(b=>b.onclick=()=>{scenario=b.dataset.sc; renderAll();});
+  const r=window.currentRisk||{risk:0};
+  const steps=[
+    {label:"Sensor Data", ok:true},
+    {label:"Anomaly Detection", ok: r.risk>10},
+    {label:"Risk Score", ok: r.risk>=31, val:r.risk+"%"},
+    {label:"Explainable AI", ok: r.risk>=31},
+    {label:"Recommendation", ok: r.risk>=45},
+  ];
+  document.getElementById('pipeline').innerHTML = steps.map(s=>`<div class="card"><div class="stat-label">${s.label}</div>
+    <div class="pill ${s.ok?'aqua':''}" style="${s.ok?'':'color:var(--sub);background:var(--panel2)'}">${s.ok?'Active':'Idle'}</div>
+    ${s.val?`<div class="stat-value" style="margin-top:8px;font-size:18px">${s.val}</div>`:''}</div>`).join('');
+}
+
+function alertHtml(a){
+  const cls = a.severity==='red'?'red':a.severity==='amber'?'amber':'';
+  const disabled = a.status==='Resolved'||a.status==='Dismissed';
+  return `<div class="card alert-card ${cls}" data-open="${a.docId}" style="cursor:pointer">
+    <div class="alert-head">
+      <div><strong>${a.component}</strong> — ${a.cause} <span class="stat-sub mono">#AQ-${a.numId} · ${a.time}</span></div>
+      <span class="pill ${a.severity}">${a.severity==='red'?'HIGH RISK':a.severity==='amber'?'WARNING':'LOW'} · ${a.risk}%</span>
+    </div>
+    <ul class="evidence">${a.evidence.map(e=>`<li>${e}</li>`).join('')}</ul>
+    <div class="stat-sub" style="margin-top:8px"><strong>Recommended:</strong> ${a.rec}</div>
+    <div class="actions">
+      <button class="btn primary" data-act="accept" data-id="${a.docId}" ${disabled?'disabled':''}>Accept Recommendation</button>
+      <button class="btn" data-act="investigate" data-id="${a.docId}" ${disabled?'disabled':''}>Investigate</button>
+      <button class="btn ghost" data-act="dismiss" data-id="${a.docId}" ${disabled?'disabled':''}>Dismiss</button>
+      <span class="pill" style="margin-left:auto">${a.status}</span>
+    </div></div>`;
+}
+function wireAlertButtons(){
+  document.querySelectorAll('[data-act]').forEach(b=>b.onclick=(ev)=>{
+    ev.stopPropagation();
+    const status = b.dataset.act==='dismiss' ? 'Dismissed' : 'Investigating';
+    setAlertStatus(b.dataset.id, status);
+    if(document.getElementById('modalBg').classList.contains('open')) openIncident(b.dataset.id);
+  });
+  document.querySelectorAll('[data-open]').forEach(c=>c.onclick=()=>openIncident(c.dataset.open));
+}
+function openIncident(id){
+  const a=alerts.find(x=>x.docId===id); if(!a) return;
+  document.getElementById('modalBody').innerHTML = `
+    <h2>Incident #AQ-${a.numId}</h2>
+    <div class="stat-sub">${a.component} · Detected ${a.time} · <span class="pill ${a.severity}">${a.risk}%</span></div>
+    <h3>Timeline</h3><ul class="timeline">${a.timeline.map(t=>`<li>${t}</li>`).join('')}</ul>
+    <h3>Why this matters</h3><p class="stat-sub">${a.cause} at ${a.component} can affect water quality or plant uptime if left unaddressed.</p>
+    <h3>What the AI found</h3><ul class="evidence">${a.evidence.map(e=>`<li>${e}</li>`).join('')}</ul>
+    <h3>Recommended action</h3><p class="stat-sub">${a.rec}</p>
+    <div class="actions">
+      <button class="btn primary" data-act="accept" data-id="${a.docId}">Accept</button>
+      <button class="btn" data-act="investigate" data-id="${a.docId}">Investigate</button>
+      <button class="btn ghost" data-act="dismiss" data-id="${a.docId}">Dismiss</button>
+      <button class="btn ghost" id="modalClose" style="margin-left:auto">Close</button>
+    </div>`;
+  document.getElementById('modalBg').classList.add('open');
+  wireAlertButtons();
+  document.getElementById('modalClose').onclick=()=>document.getElementById('modalBg').classList.remove('open');
+}
+document.getElementById('modalBg').onclick=(e)=>{ if(e.target.id==='modalBg') e.currentTarget.classList.remove('open'); };
+function renderAlerts(){
+  document.getElementById('alertList').innerHTML = alerts.length? alerts.map(alertHtml).join('') : `<div class="empty">No alerts recorded yet. Run a scenario from the Simulation Center.</div>`;
+  wireAlertButtons();
+}
+
+function equipmentDynamic(){
+  const r=window.currentRisk||{risk:0,component:null};
+  return [
+    {id:"F-102",type:"Filter",health: r.component==="Filter F-102"?Math.max(20,100-r.risk):96, note: r.component==="Filter F-102"?r.cause:"Nominal"},
+    {id:"P-204",type:"Pump",health: r.component==="Pump P-204"?Math.max(15,100-r.risk):95, note: r.component==="Pump P-204"?r.cause:"Nominal"},
+    {id:"Chlorination System",type:"Dosing",health: r.component==="Chlorination System"?Math.max(30,100-r.risk):97, note: r.component==="Chlorination System"?r.cause:"Nominal"},
+  ];
+}
+function renderEquipment(){
+  const all=[...equipmentDynamic(), ...equipmentStatic];
+  document.getElementById('eqCards').innerHTML = all.map(e=>{
+    const cls = e.health<50?'red':e.health<80?'amber':'green';
+    return `<div class="card eq-card"><div style="display:flex;justify-content:space-between"><strong>${e.id}</strong><span class="stat-sub">${e.type}</span></div>
+    <div class="health-bar"><div class="health-fill" style="width:${e.health}%;background:var(--${cls==='red'?'red':cls==='amber'?'amber':'green'})"></div></div>
+    <div class="stat-sub">Health ${e.health}% · ${e.note}</div></div>`;
+  }).join('');
+}
+
+function renderAll(){ renderDashboard(); renderOverview(); renderMonitoring(); renderSimulation(); renderAlerts(); renderEquipment(); renderSettingsForm(); }
+
+function renderSettingsForm(){
+  document.getElementById('rngWarn').value=settings.warn; document.getElementById('valWarn').textContent=settings.warn+'%';
+  document.getElementById('rngHigh').value=settings.high; document.getElementById('valHigh').textContent=settings.high+'%';
+  document.getElementById('rngSens').value=settings.sens; document.getElementById('valSens').textContent='×'+settings.sens;
+  document.getElementById('rngSpeed').value=settings.speed; document.getElementById('valSpeed').textContent=settings.speed+'ms';
+  document.getElementById('sensorChecks').innerHTML = Object.keys(settings.sensors).map(k=>`
+    <div class="chkrow"><input type="checkbox" id="chk_${k}" ${settings.sensors[k]?'checked':''}><label for="chk_${k}" style="margin:0">${k}</label></div>`).join('');
+}
+['rngWarn','rngHigh','rngSens','rngSpeed'].forEach(id=>document.getElementById(id).oninput=()=>{
+  document.getElementById('valWarn').textContent=document.getElementById('rngWarn').value+'%';
+  document.getElementById('valHigh').textContent=document.getElementById('rngHigh').value+'%';
+  document.getElementById('valSens').textContent='×'+document.getElementById('rngSens').value;
+  document.getElementById('valSpeed').textContent=document.getElementById('rngSpeed').value+'ms';
+});
+document.getElementById('btnSaveSettings').onclick=()=>{
+  settings.warn=+document.getElementById('rngWarn').value; settings.high=+document.getElementById('rngHigh').value;
+  settings.sens=+document.getElementById('rngSens').value; settings.speed=+document.getElementById('rngSpeed').value;
+  Object.keys(settings.sensors).forEach(k=>settings.sensors[k]=document.getElementById('chk_'+k).checked);
+  if(running){ clearInterval(timer); timer=setInterval(step, settings.speed); }
+  saveState(); toast('Settings saved');
+};
+document.getElementById('btnResetSettings').onclick=()=>{ settings=JSON.parse(JSON.stringify(DEFAULT_SETTINGS)); document.documentElement.setAttribute('data-theme', settings.theme); saveState(); renderAll(); toast('Restored defaults'); };
+
+const themeSwitch=document.getElementById('themeSwitch');
+if(settings.theme==='light') themeSwitch.classList.add('on');
+themeSwitch.onclick=()=>{
+  settings.theme = settings.theme==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme', settings.theme);
+  themeSwitch.classList.toggle('on'); saveState();
+};
+
+document.getElementById('btnExport').onclick=async ()=>{
+  const rows=[["ID","Time","Component","Cause","Risk","Severity","Status","Recommendation"]];
+  alerts.forEach(a=>rows.push(["AQ-"+a.numId,a.time,a.component,a.cause,a.risk,a.severity,a.status,a.rec.replace(/,/g,';')]));
+  const csv = rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+  const downloads = await useCapability('downloads');
+  if(downloads){ try{ await downloads.save({filename:"aquaguard_alerts.csv", data:csv}); return; }catch(e){} }
+  try{
+    const blob = new Blob([csv], {type:'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'aquaguard_alerts.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+  }catch(e){ toast('Download failed — copy the CSV from console.'); console.log(csv); }
+};
+initDb();
+
+/* ---------- nav ---------- */
+document.querySelectorAll('.navlink').forEach(l=>l.onclick=()=>{
+  document.querySelectorAll('.navlink').forEach(x=>x.classList.remove('active'));
+  l.classList.add('active');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+l.dataset.page).classList.add('active');
+});
+document.querySelector('.navlink[data-page="dashboard"]').classList.add('active');
+document.getElementById('page-dashboard').classList.add('active');
+
+document.getElementById('btnStart').onclick=()=>{ if(!running){ running=true; timer=setInterval(step,settings.speed);} };
+document.getElementById('btnPause').onclick=()=>{ running=false; clearInterval(timer); };
+document.getElementById('btnReset').onclick=()=>{ running=false; clearInterval(timer); scenario="normal"; alerts=[]; seedHist(); evaluateRisk(); saveState(); renderAll(); };
+
+seedHist(); evaluateRisk(); renderAll();
+running=true; timer=setInterval(step,settings.speed);
+</script>
+</body>
+</html>
